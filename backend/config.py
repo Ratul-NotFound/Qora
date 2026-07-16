@@ -17,11 +17,17 @@ class Settings(BaseSettings):
     # App Settings
     max_papers_per_source: int = Field(default=25, env="MAX_PAPERS_PER_SOURCE")
     max_concurrent_summaries: int = Field(default=5, env="MAX_CONCURRENT_SUMMARIES")
-    db_path: str = Field(default="./qora.db", env="DB_PATH")
+    
+    # Database URIs
+    postgres_uri: str = Field(default="postgresql://nexus_user:nexus_password@localhost:5432/nexus_db", env="POSTGRES_URI")
+    redis_uri: str = Field(default="redis://localhost:6379/0", env="REDIS_URI")
+    neo4j_uri: str = Field(default="bolt://localhost:7687", env="NEO4J_URI")
+    neo4j_user: str = Field(default="neo4j", env="NEO4J_USER")
+    neo4j_password: str = Field(default="nexus_password", env="NEO4J_PASSWORD")
+    weaviate_url: str = Field(default="http://localhost:8080", env="WEAVIATE_URL")
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-
 
 settings = Settings()

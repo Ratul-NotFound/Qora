@@ -14,3 +14,9 @@ xmltodict
 aiosqlite
 tiktoken
 markdown
+psycopg2-binary
+sqlalchemy
+celery
+redis
+neo4j
+weaviate-client

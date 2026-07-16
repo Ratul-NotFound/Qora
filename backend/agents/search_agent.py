@@ -6,10 +6,10 @@ import asyncio
 import hashlib
 from typing import List, Callable, Optional
 from models.schemas import Paper
-from sources.arxiv_source import ArxivSource
+from sources.arxiv import ArxivSource
 from sources.semantic_scholar import SemanticScholarSource
-from sources.pubmed_source import PubMedSource
-from sources.openalex_source import OpenAlexSource
+from sources.pubmed import PubMedSource
+from sources.openalex import OpenAlexSource
 
 
 class SearchAgent:
