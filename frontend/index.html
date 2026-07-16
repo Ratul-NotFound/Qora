@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QORA Research AI</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="./css/styles.css">
+    
+    <!-- Marked for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- D3 & Force Graph for Knowledge Graph -->
+    <script src="https://unpkg.com/d3@7"></script>
+    <script src="https://unpkg.com/force-graph"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar glass-panel">
+            <div class="logo">
+                <i class="fa-solid fa-atom pulse-icon"></i>
+                <span>QORA</span>
+            </div>
+            
+            <ul class="nav-links">
+                <li class="active" data-target="discover-view"><i class="fa-solid fa-magnifying-glass"></i> Discover</li>
+                <li data-target="graph-view"><i class="fa-solid fa-network-wired"></i> Knowledge Graph</li>
+                <li data-target="report-view"><i class="fa-solid fa-file-contract"></i> Reports</li>
+                <li data-target="settings-view"><i class="fa-solid fa-gear"></i> Settings</li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- 1. Discover / Search View -->
+            <section id="discover-view" class="view-section active">
+                <header class="view-header">
+                    <h1>Autonomous Research Intelligence</h1>
+                    <p>Enter a topic. QORA will search, read, analyze, and synthesize the global state of the art.</p>
+                </header>
+
+                <div class="search-box glass-panel">
+                    <input type="text" id="search-input" placeholder="E.g., Quantum error correction for superconducting qubits...">
+                    <button id="search-btn" class="primary-btn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Synthesize
+                    </button>
+                </div>
+
+                <div class="sources-toggles">
+                    <label class="toggle"><input type="checkbox" id="src-arxiv" checked> ArXiv</label>
+                    <label class="toggle"><input type="checkbox" id="src-ss" checked> Semantic Scholar</label>
+                    <label class="toggle"><input type="checkbox" id="src-pubmed" checked> PubMed</label>
+                    <label class="toggle"><input type="checkbox" id="src-oa" checked> OpenAlex</label>
+                </div>
+
+                <!-- Live Progress Display -->
+                <div id="progress-container" class="progress-container hidden">
+                    <div class="progress-bar-bg">
+                        <div id="progress-bar" class="progress-bar-fill"></div>
+                    </div>
+                    <div id="progress-text" class="progress-text">Initializing AI agents...</div>
+                </div>
+
+                <!-- Dashboard Grid (Populates after search) -->
+                <div id="dashboard-grid" class="dashboard-grid hidden">
+                    <!-- Key Insights Card -->
+                    <div class="glass-card span-2">
+                        <h3><i class="fa-solid fa-lightbulb"></i> Critical Research Gaps</h3>
+                        <ul id="gaps-list" class="insights-list"></ul>
+                    </div>
+
+                    <!-- Hypotheses Card -->
+                    <div class="glass-card span-2">
+                        <h3><i class="fa-solid fa-flask"></i> AI Generated Hypotheses</h3>
+                        <ul id="hypotheses-list" class="insights-list"></ul>
+                    </div>
+
+                    <!-- Papers List -->
+                    <div class="glass-card span-4">
+                        <h3><i class="fa-solid fa-book-open"></i> Analyzed Papers <span id="paper-count" class="badge">0</span></h3>
+                        <div id="papers-list" class="papers-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Knowledge Graph View -->
+            <section id="graph-view" class="view-section">
+                <header class="view-header">
+                    <h1>Knowledge Graph</h1>
+                    <p>Visualizing relationships between papers, methods, and concepts.</p>
+                </header>
+                <div class="glass-panel graph-container" id="graph-container">
+                    <!-- 3D Graph renders here -->
+                </div>
+            </section>
+
+            <!-- 3. Report View -->
+            <section id="report-view" class="view-section">
+                <header class="view-header">
+                    <h1>Literature Review</h1>
+                    <p>Auto-generated synthesis of the research landscape.</p>
+                </header>
+                <div class="glass-panel report-container">
+                    <div id="markdown-content" class="markdown-body">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-file-signature"></i>
+                            <p>Run a research synthesis to generate a literature review.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. Settings View -->
+            <section id="settings-view" class="view-section">
+                <header class="view-header">
+                    <h1>Settings & API Keys</h1>
+                    <p>Configure QORA connections and agent behavior.</p>
+                </header>
+                <div class="glass-panel settings-form">
+                    <p class="note"><i class="fa-solid fa-circle-info"></i> Note: For the Python backend, set these in <code>backend/.env</code>.</p>
+                    <div class="form-group">
+                        <label>FastAPI Backend URL</label>
+                        <input type="text" id="api-base-url" value="http://localhost:8000">
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="./js/api.js"></script>
+    <script src="./js/graph.js"></script>
+    <script src="./js/app.js"></script>
+</body>
+</html>
