@@ -10,6 +10,7 @@ from typing import List, Optional, Callable
 from models.schemas import AnalyzeRequest, ResearchSession, Paper
 from models.database import SessionLocal
 from models.models import DbResearchSession, DbPaper
+from knowledge.graph import Neo4jGraphHandler
 from agents.search_agent import SearchAgent
 from agents.reader_agent import ReaderAgent
 from agents.analyst_agent import AnalystAgent
@@ -23,6 +24,7 @@ class CoordinatorAgent:
         self.reader_agent = ReaderAgent(settings)
         self.analyst_agent = AnalystAgent(settings)
         self.writer_agent = WriterAgent(settings)
+        self.graph_handler = Neo4jGraphHandler()
 
     def create_session(self, topic: str) -> str:
         session_id = str(uuid.uuid4())
@@ -201,6 +203,12 @@ class CoordinatorAgent:
                 db_session.gaps = intelligence.get("gaps", [])
                 db_session.hypotheses = intelligence.get("hypotheses", [])
                 db.commit()
+
+            # Save graph to Neo4j
+            try:
+                self.graph_handler.save_session_graph(session_id, top_papers, intelligence)
+            except Exception as ge:
+                print(f"[Coordinator] Neo4j graph save failed: {ge}")
 
             # 4. Report Generation
             report = await self.writer_agent.write_literature_review(

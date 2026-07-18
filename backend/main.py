@@ -4,7 +4,12 @@ from api.routes import router
 from models.database import engine, Base
 import models.models # Ensure models are loaded for create_all
 
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+    print("Database tables initialized successfully.")
+except Exception as e:
+    print(f"Database offline: {e}")
+    print("  Research sessions will run without persistence. Please ensure Docker is running.")
 
 app = FastAPI(title="QORA Research AI API")
 
