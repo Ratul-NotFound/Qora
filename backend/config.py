@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # External API Keys
     semantic_scholar_api_key: str = Field(default="", env="SEMANTIC_SCHOLAR_API_KEY")
     ncbi_api_key: str = Field(default="", env="NCBI_API_KEY")
+    core_api_key: str = Field(default="", env="CORE_API_KEY")
 
     # App Settings
     max_papers_per_source: int = Field(default=25, env="MAX_PAPERS_PER_SOURCE")

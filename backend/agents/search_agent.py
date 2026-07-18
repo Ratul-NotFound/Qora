@@ -10,6 +10,7 @@ from sources.arxiv import ArxivSource
 from sources.semantic_scholar import SemanticScholarSource
 from sources.pubmed import PubMedSource
 from sources.openalex import OpenAlexSource
+from sources.core import CoreSource
 
 
 class SearchAgent:
@@ -20,6 +21,7 @@ class SearchAgent:
             "semantic_scholar": SemanticScholarSource(api_key=settings.semantic_scholar_api_key),
             "pubmed": PubMedSource(api_key=settings.ncbi_api_key),
             "openalex": OpenAlexSource(),
+            "core": CoreSource(api_key=settings.core_api_key),
         }
 
     async def search(

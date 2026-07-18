@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Map, FileText, Settings, FlaskConical } from "lucide-react";
+import { Search, Map, FileText, Settings, Compass, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,47 +9,58 @@ export default function Sidebar() {
 
   const links = [
     { name: "Discover", href: "/", icon: Search },
-    { name: "Knowledge Graph", href: "/graph", icon: Map },
-    { name: "Literature Review", href: "/reports", icon: FileText },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Citation Graph", href: "/graph", icon: Map },
+    { name: "Research Review", href: "/reports", icon: FileText },
+    { name: "Gaps & Trends", href: "/gaps", icon: Compass },
+    { name: "System Settings", href: "/settings", icon: Settings },
   ];
 
   return (
-    <nav className="glass-panel w-64 m-4 rounded-2xl p-6 flex flex-col justify-between">
-      <div>
-        <div className="flex items-center gap-3 mb-12">
-          <div className="p-2 bg-blue-500/20 text-blue-400 rounded-xl">
-            <FlaskConical size={28} />
+    <nav className="w-60 h-screen border-r border-[var(--border)] bg-[var(--background)] flex flex-col justify-between p-5 select-none">
+      <div className="space-y-6">
+        <div className="flex items-center gap-2.5 px-2">
+          <div className="w-5 h-5 bg-white rounded-sm flex items-center justify-center">
+            <span className="text-[10px] font-bold text-black tracking-tighter">Q</span>
           </div>
-          <span className="text-xl font-bold tracking-wider">QORA</span>
+          <span className="text-sm font-semibold tracking-wide uppercase text-white font-mono">QORA</span>
         </div>
 
-        <ul className="space-y-2">
-          {links.map((link) => {
-            const Icon = link.icon;
-            const isActive = pathname === link.href;
-            return (
-              <li key={link.name}>
-                <Link
-                  href={link.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                      : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
-                  }`}
-                >
-                  <Icon size={20} />
-                  <span className="font-medium">{link.name}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="space-y-1">
+          <div className="px-2 text-[10px] font-semibold text-neutral-600 uppercase tracking-widest mb-2">Research Workspace</div>
+          <ul className="space-y-0.5">
+            {links.map((link) => {
+              const Icon = link.icon;
+              const isActive = pathname === link.href;
+              return (
+                <li key={link.name}>
+                  <Link
+                    href={link.href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all text-xs md:text-sm font-medium ${
+                      isActive
+                        ? "bg-neutral-900 text-white border-l-2 border-white"
+                        : "text-neutral-400 hover:bg-neutral-950 hover:text-white"
+                    }`}
+                  >
+                    <Icon size={15} className={isActive ? "text-white" : "text-neutral-500"} />
+                    <span>{link.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </div>
 
-      <div className="text-xs text-slate-500 text-center">
-        <p>Qora Research AI</p>
-        <p>Version 2.0.0 (Cloud)</p>
+      <div className="space-y-3">
+        <div className="p-3 bg-[var(--panel)] border border-[var(--border)] rounded-lg text-xs">
+          <div className="flex items-center gap-1.5 text-neutral-300 font-medium mb-1">
+            <Sparkles size={12} className="text-amber-400" />
+            <span>Local Cluster</span>
+          </div>
+          <p className="text-neutral-500 font-light leading-relaxed">
+            FastAPI + Docker backend running locally. Ready to process PDFs.
+          </p>
+        </div>
       </div>
     </nav>
   );

@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router
+from models.database import engine, Base
+import models.models # Ensure models are loaded for create_all
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="QORA Research AI API")
 

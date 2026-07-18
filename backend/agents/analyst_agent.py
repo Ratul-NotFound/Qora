@@ -16,7 +16,7 @@ class AnalystAgent:
     def __init__(self, settings):
         self.settings = settings
         self.client = AsyncOpenAI(
-            api_key=settings.llm_api_key,
+            api_key=settings.llm_api_key or "placeholder",
             base_url=settings.llm_base_url,
         )
 

@@ -38,7 +38,7 @@ class AnalyzeRequest(BaseModel):
     topic: str
     depth: int = 2  # citation traversal depth
     max_papers: int = 50
-    sources: List[str] = ["arxiv", "semantic_scholar", "pubmed", "openalex"]
+    sources: List[str] = ["arxiv", "semantic_scholar", "pubmed", "openalex", "core"]
 
 
 class ReviewRequest(BaseModel):
