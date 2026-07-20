@@ -5,6 +5,7 @@ and research reports with proper citations.
 from typing import List, Callable, Optional
 from openai import AsyncOpenAI
 from models.schemas import Paper
+from generation.report_builder import ReportBuilder
 
 
 class WriterAgent:
@@ -14,6 +15,7 @@ class WriterAgent:
             api_key=settings.llm_api_key or "placeholder",
             base_url=settings.llm_base_url,
         )
+        self.report_builder = ReportBuilder()
 
     async def write_literature_review(
         self,
@@ -98,12 +100,15 @@ Write the full literature review in Markdown format below:"""
                 temperature=0.3,
                 max_tokens=4000,
             )
-            report = response.choices[0].message.content.strip()
+            raw_report = response.choices[0].message.content.strip()
+            full_dossier = self.report_builder.build_markdown_report(
+                topic, raw_report, top_papers, intelligence_data
+            )
             
             if on_progress:
                 await on_progress("✅ Literature review generated successfully!", 1.0)
                 
-            return report
+            return full_dossier
         except Exception as e:
             print(f"[WriterAgent] Failed to generate review: {e}")
             return f"# Literature Review: {topic}\n\nError generating review: {str(e)}"
