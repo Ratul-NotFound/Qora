@@ -11,6 +11,7 @@ from models.schemas import AnalyzeRequest, ResearchSession, Paper
 from models.database import SessionLocal
 from models.models import DbResearchSession, DbPaper
 from knowledge.graph import Neo4jGraphHandler
+from knowledge.embeddings import EmbeddingsManager
 from agents.search_agent import SearchAgent
 from agents.reader_agent import ReaderAgent
 from agents.analyst_agent import AnalystAgent
@@ -25,6 +26,7 @@ class CoordinatorAgent:
         self.analyst_agent = AnalystAgent(settings)
         self.writer_agent = WriterAgent(settings)
         self.graph_handler = Neo4jGraphHandler()
+        self.embeddings_manager = EmbeddingsManager()
 
     def create_session(self, topic: str) -> str:
         session_id = str(uuid.uuid4())
@@ -209,6 +211,12 @@ class CoordinatorAgent:
                 self.graph_handler.save_session_graph(session_id, top_papers, intelligence)
             except Exception as ge:
                 print(f"[Coordinator] Neo4j graph save failed: {ge}")
+
+            # Save vectors to Weaviate
+            try:
+                self.embeddings_manager.index_papers(top_papers)
+            except Exception as ve:
+                print(f"[Coordinator] Weaviate vector indexing failed: {ve}")
 
             # 4. Report Generation
             report = await self.writer_agent.write_literature_review(
