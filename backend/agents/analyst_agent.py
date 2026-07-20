@@ -10,6 +10,7 @@ import json
 from typing import List, Callable, Optional
 from openai import AsyncOpenAI
 from models.schemas import Paper
+from knowledge.timeline import TimelineBuilder
 
 
 class AnalystAgent:
@@ -19,6 +20,7 @@ class AnalystAgent:
             api_key=settings.llm_api_key or "placeholder",
             base_url=settings.llm_base_url,
         )
+        self.timeline_builder = TimelineBuilder()
 
     async def analyze(
         self,
@@ -101,36 +103,8 @@ Return ONLY the JSON array."""
                     for g in all_gaps[:10]]
 
     async def _analyze_trends(self, papers: List[Paper], topic: str) -> dict:
-        """Analyze temporal trends in the research area."""
-        # Group papers by year
-        by_year = {}
-        for p in papers:
-            if p.year:
-                by_year.setdefault(p.year, []).append(p)
-
-        timeline = {
-            year: {
-                "count": len(plist),
-                "top_papers": [p.title for p in sorted(plist, key=lambda x: x.citations, reverse=True)[:3]],
-                "methods": list(set(m for p in plist for m in p.methods[:2])),
-            }
-            for year, plist in sorted(by_year.items())
-        }
-
-        methods_count = {}
-        for p in papers:
-            for m in p.methods:
-                if m:
-                    methods_count[m] = methods_count.get(m, 0) + 1
-
-        top_methods = sorted(methods_count.items(), key=lambda x: x[1], reverse=True)[:10]
-
-        return {
-            "timeline": timeline,
-            "top_methods": [{"method": m, "count": c} for m, c in top_methods],
-            "total_papers": len(papers),
-            "year_range": [min(by_year.keys(), default=0), max(by_year.keys(), default=0)],
-        }
+        """Analyze temporal trends in the research area using TimelineBuilder."""
+        return self.timeline_builder.build_timeline(papers)
 
     async def _generate_hypotheses(self, papers: List[Paper], topic: str) -> List[dict]:
         """Generate novel research hypotheses based on gaps and trends."""
