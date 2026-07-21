@@ -10,6 +10,7 @@ import json
 from typing import List, Optional, Callable
 from openai import AsyncOpenAI
 from models.schemas import Paper
+from sources.pdf_downloader import PDFDownloader
 
 
 SYSTEM_PROMPT = """You are an expert research analyst AI. Your job is to analyze academic papers
@@ -42,6 +43,7 @@ class ReaderAgent:
             base_url=settings.llm_base_url,
         )
         self.semaphore = asyncio.Semaphore(settings.max_concurrent_summaries)
+        self.pdf_downloader = PDFDownloader()
 
     async def analyze_papers(
         self,
@@ -65,16 +67,23 @@ class ReaderAgent:
     async def _analyze_one(
         self, paper: Paper, topic: str, idx: int, total: int, on_progress: Optional[Callable]
     ) -> Paper:
-        if not paper.abstract:
+        if not paper.abstract and not paper.pdf_url:
             return paper
 
         async with self.semaphore:
             try:
+                # Attempt full PDF download if available
+                full_text = None
+                if paper.pdf_url:
+                    full_text = await self.pdf_downloader.download_and_extract_text(paper.pdf_url)
+
+                content_to_analyze = (full_text[:4000] if full_text else paper.abstract[:2000])
+
                 prompt = ANALYSIS_PROMPT.format(
                     title=paper.title[:200],
                     authors=", ".join(paper.authors[:5]),
                     year=paper.year or "Unknown",
-                    abstract=paper.abstract[:2000],
+                    abstract=content_to_analyze,
                 )
 
                 response = await self.client.chat.completions.create(
