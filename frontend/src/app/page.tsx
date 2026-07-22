@@ -3,14 +3,18 @@
 import { useState, useEffect, useRef } from "react";
 import Sidebar from "@/components/Sidebar";
 import SearchBox from "@/components/SearchBox";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { 
   ArrowUpRight, BookOpen, GitMerge, FileCheck2, 
   Terminal, CheckCircle2, AlertCircle, ExternalLink, ChevronDown, ChevronUp, FileText, Compass, Sparkles
 } from "lucide-react";
 import axios from "axios";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface Paper {
-  id: str;
+  id: string;
   title: string;
   authors: string[];
   abstract: string;
@@ -84,10 +88,10 @@ export default function Home() {
 
     try {
       // 1. Post to research endpoint
-      const response = await axios.post("http://localhost:8000/api/research", {
+      const response = await axios.post(`${API_URL}/api/research`, {
         topic: query,
         depth: 2,
-        max_papers: 10, // keep small for quick, high-speed responses
+        max_papers: 30,
         sources: sources,
       });
 
@@ -96,7 +100,7 @@ export default function Home() {
       setLogs((prev) => [...prev, `Session created: ${sessionId}. Opening WebSocket stream...`]);
 
       // 2. Open WebSocket stream
-      const ws = new WebSocket(`ws://localhost:8000/ws/research/${sessionId}`);
+      const ws = new WebSocket(`${API_URL.replace('http', 'ws')}/ws/research/${sessionId}`);
 
       ws.onmessage = async (event) => {
         const messageData = JSON.parse(event.data);
@@ -116,7 +120,7 @@ export default function Home() {
         
         // 3. Fetch completed data
         try {
-          const resultsResponse = await axios.get(`http://localhost:8000/api/research/${sessionId}/results`);
+          const resultsResponse = await axios.get(`${API_URL}/api/research/${sessionId}/results`);
           setSessionData(resultsResponse.data);
           setProgress(1.0);
           setIsSearching(false);
@@ -348,6 +352,37 @@ export default function Home() {
                                     </ul>
                                   </div>
                                 )}
+
+                                {paper.methods && paper.methods.length > 0 && (
+                                  <div className="space-y-1.5">
+                                    <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">Methods</span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {paper.methods.map((m, i) => (
+                                        <span key={i} className="text-[10px] bg-neutral-800 px-2 py-0.5 rounded font-mono text-neutral-300">{m}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {paper.datasets && paper.datasets.length > 0 && (
+                                  <div className="space-y-1.5">
+                                    <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">Datasets</span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {paper.datasets.map((d, i) => (
+                                        <span key={i} className="text-[10px] bg-blue-950/50 border border-blue-900/30 px-2 py-0.5 rounded font-mono text-blue-300">{d}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {paper.research_gaps && paper.research_gaps.length > 0 && (
+                                  <div className="space-y-1.5">
+                                    <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">Research Gaps</span>
+                                    <ul className="list-disc pl-4 space-y-1 text-amber-400/80 font-light">
+                                      {paper.research_gaps.map((g, i) => <li key={i}>{g}</li>)}
+                                    </ul>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -361,8 +396,10 @@ export default function Home() {
               {/* Tab 2: Literature Review string renderer */}
               {activeTab === "report" && (
                 <div className="bg-[var(--panel)] border border-[var(--border)] rounded-xl p-8 max-w-3xl mx-auto shadow-sm">
-                  <article className="prose prose-invert prose-sm max-w-none text-neutral-300 font-light leading-relaxed space-y-6 whitespace-pre-wrap">
-                    {sessionData.report}
+                  <article className="prose prose-invert prose-sm max-w-none text-neutral-300 font-light leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {sessionData.report}
+                    </ReactMarkdown>
                   </article>
                 </div>
               )}
