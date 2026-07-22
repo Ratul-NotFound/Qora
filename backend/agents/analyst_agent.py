@@ -145,7 +145,7 @@ Return ONLY the JSON array."""
                 model=self.settings.llm_heavy_model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
-                max_tokens=2500,
+                max_tokens=1200,
             )
             raw = response.choices[0].message.content.strip()
             if raw.startswith("```"):

@@ -98,7 +98,7 @@ Write the full literature review in Markdown format below:"""
                 model=self.settings.llm_heavy_model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
-                max_tokens=4000,
+                max_tokens=1600,
             )
             raw_report = response.choices[0].message.content.strip()
             full_dossier = self.report_builder.build_markdown_report(
