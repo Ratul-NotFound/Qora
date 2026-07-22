@@ -11,6 +11,7 @@ from typing import List, Callable, Optional
 from openai import AsyncOpenAI
 from models.schemas import Paper
 from knowledge.timeline import TimelineBuilder
+from utils.llm_utils import llm_call_with_retry, extract_json
 
 
 class AnalystAgent:
@@ -30,7 +31,7 @@ class AnalystAgent:
     ) -> dict:
         """Run all analysis tasks and return consolidated intelligence report."""
         if on_progress:
-            await on_progress("🔬 Running deep intelligence analysis...", 0.76)
+            await on_progress("Running deep intelligence analysis...", 0.76)
 
         gaps_task = self._find_research_gaps(papers, topic)
         trends_task = self._analyze_trends(papers, topic)
@@ -42,7 +43,7 @@ class AnalystAgent:
         )
 
         if on_progress:
-            await on_progress("✅ Intelligence analysis complete!", 0.88)
+            await on_progress("Intelligence analysis complete!", 0.88)
 
         return {
             "gaps": gaps,
@@ -86,21 +87,22 @@ Return a JSON array of gap objects:
 
 Return ONLY the JSON array."""
 
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.settings.llm_heavy_model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=2000,
-            )
-            raw = response.choices[0].message.content.strip()
-            if raw.startswith("```"):
-                raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0]
-            return json.loads(raw)
-        except Exception as e:
-            print(f"[AnalystAgent] Gap detection failed: {e}")
-            return [{"gap": g, "description": "", "severity": "medium", "related_papers": 1}
-                    for g in all_gaps[:10]]
+        raw = await llm_call_with_retry(
+            client=self.client,
+            model=self.settings.llm_heavy_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=2000,
+            max_retries=3,
+        )
+
+        result = extract_json(raw) if raw else None
+        if result and isinstance(result, list):
+            return result
+
+        # Fallback: return raw paper gaps
+        return [{"gap": g, "description": "", "severity": "medium", "related_papers": 1}
+                for g in all_gaps[:10]]
 
     async def _analyze_trends(self, papers: List[Paper], topic: str) -> dict:
         """Analyze temporal trends in the research area using TimelineBuilder."""
@@ -140,20 +142,19 @@ Return a JSON array:
 
 Return ONLY the JSON array."""
 
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.settings.llm_heavy_model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-                max_tokens=1200,
-            )
-            raw = response.choices[0].message.content.strip()
-            if raw.startswith("```"):
-                raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0]
-            return json.loads(raw)
-        except Exception as e:
-            print(f"[AnalystAgent] Hypothesis generation failed: {e}")
-            return []
+        raw = await llm_call_with_retry(
+            client=self.client,
+            model=self.settings.llm_heavy_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=2000,
+            max_retries=3,
+        )
+
+        result = extract_json(raw) if raw else None
+        if result and isinstance(result, list):
+            return result
+        return []
 
     async def _build_graph_data(self, papers: List[Paper]) -> dict:
         """Build nodes and edges for the knowledge graph visualization."""
@@ -174,9 +175,7 @@ Return ONLY the JSON array."""
 
         # Method concept nodes
         method_counts = {}
-        paper_methods = {}
         for p in papers[:50]:
-            paper_methods[p.id] = p.methods
             for m in p.methods:
                 if m:
                     method_counts[m] = method_counts.get(m, 0) + 1

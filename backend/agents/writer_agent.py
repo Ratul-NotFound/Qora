@@ -6,6 +6,7 @@ from typing import List, Callable, Optional
 from openai import AsyncOpenAI
 from models.schemas import Paper
 from generation.report_builder import ReportBuilder
+from utils.llm_utils import llm_call_with_retry
 
 
 class WriterAgent:
@@ -27,7 +28,7 @@ class WriterAgent:
         """Generates a full literature review in Markdown format."""
         
         if on_progress:
-            await on_progress("✍️ Drafting literature review...", 0.90)
+            await on_progress("Drafting literature review...", 0.90)
 
         # Sort papers by relevance and citations
         top_papers = sorted(
@@ -44,9 +45,12 @@ class WriterAgent:
             paper_context += f"    Methods: {', '.join(p.methods)}\n\n"
 
         gaps = intelligence_data.get("gaps", [])
-        trends = intelligence_data.get("trends", {})
         
-        gaps_context = "\n".join(f"- {g['gap']}: {g.get('description', '')}" for g in gaps[:5])
+        gaps_context = "\n".join(
+            f"- {g['gap']}: {g.get('description', '')}" 
+            for g in gaps[:5] 
+            if isinstance(g, dict)
+        )
         
         prompt = f"""You are an expert academic researcher writing a comprehensive literature review on: "{topic}".
 
@@ -58,13 +62,13 @@ Use this structure:
 ## 1. Introduction
 (Define the problem, its importance, and scope of this review)
 
-## 2. Evolution of the Field (Trends)
+## 2. Evolution of the Field
 (Discuss how the field has evolved temporally and methodologically)
 
 ## 3. Key Methodologies and Approaches
 (Synthesize the main methods used across the papers)
 
-## 4. Current State of the Art (Key Findings)
+## 4. Current State of the Art
 (What are the most significant recent breakthroughs?)
 
 ## 5. Open Challenges and Research Gaps
@@ -92,23 +96,26 @@ Identified Gaps:
 ---
 
 Write the full literature review in Markdown format below:"""
+        
+        raw_report = await llm_call_with_retry(
+            client=self.client,
+            model=self.settings.llm_heavy_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=3000,
+            max_retries=3,
+        )
 
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.settings.llm_heavy_model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=1600,
-            )
-            raw_report = response.choices[0].message.content.strip()
+        if raw_report:
             full_dossier = self.report_builder.build_markdown_report(
                 topic, raw_report, top_papers, intelligence_data
             )
             
             if on_progress:
-                await on_progress("✅ Literature review generated successfully!", 1.0)
+                await on_progress("Literature review generated successfully!", 1.0)
                 
             return full_dossier
-        except Exception as e:
-            print(f"[WriterAgent] Failed to generate review: {e}")
-            return f"# Literature Review: {topic}\n\nError generating review: {str(e)}"
+        else:
+            if on_progress:
+                await on_progress("Literature review generation failed after retries.", 1.0)
+            return f"# Literature Review: {topic}\n\nError: All LLM generation attempts failed. Please check your API key and model configuration."

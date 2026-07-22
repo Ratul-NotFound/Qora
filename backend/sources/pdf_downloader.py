@@ -4,8 +4,12 @@ Downloads open access PDFs and extracts clean text for deep reading analysis.
 """
 import io
 import httpx
-from PyPDF2 import PdfReader
 from typing import Optional
+
+try:
+    from pypdf import PdfReader
+except ImportError:
+    from PyPDF2 import PdfReader
 
 
 class PDFDownloader:
@@ -23,7 +27,6 @@ class PDFDownloader:
             async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=self.headers) as client:
                 response = await client.get(pdf_url)
                 if response.status_code != 200:
-                    print(f"[PDFDownloader] HTTP error {response.status_code} for {pdf_url}")
                     return None
 
                 pdf_bytes = io.BytesIO(response.content)

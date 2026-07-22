@@ -287,11 +287,66 @@ class CoordinatorAgent:
                 print(f"[Coordinator] DB save report error: {dbe}")
 
             if on_progress:
-                await on_progress("✨ Analysis complete", 1.0)
+                await on_progress("Analysis complete", 1.0)
 
         except Exception as e:
             print(f"[Coordinator] Pipeline failed for session {session_id}: {e}")
             if session:
                 session.status = "failed"
             if on_progress:
-                await on_progress(f"❌ Pipeline failed: {str(e)}", 1.0)
+                await on_progress(f"Pipeline failed: {str(e)}", 1.0)
+
+    def list_sessions(self) -> List[ResearchSession]:
+        """Return all sessions from DB + in-memory."""
+        sessions = []
+        seen_ids = set()
+
+        # Try DB first
+        try:
+            db = SessionLocal()
+            db_sessions = db.query(DbResearchSession).order_by(DbResearchSession.created_at.desc()).limit(50).all()
+            for ds in db_sessions:
+                seen_ids.add(ds.id)
+                sessions.append(ResearchSession(
+                    id=ds.id,
+                    topic=ds.topic,
+                    status=ds.status,
+                    papers_found=ds.papers_found,
+                    papers_analyzed=ds.papers_analyzed,
+                    created_at=ds.created_at,
+                    completed_at=ds.completed_at or "",
+                ))
+            db.close()
+        except Exception:
+            pass
+
+        # Add in-memory sessions not in DB
+        for sid, s in self.in_memory_sessions.items():
+            if sid not in seen_ids:
+                sessions.append(s)
+
+        return sessions
+
+    def delete_session(self, session_id: str) -> bool:
+        """Delete a session from DB and in-memory."""
+        deleted = False
+
+        if session_id in self.in_memory_sessions:
+            del self.in_memory_sessions[session_id]
+            deleted = True
+        if session_id in self.in_memory_data:
+            del self.in_memory_data[session_id]
+
+        try:
+            db = SessionLocal()
+            db_session = db.query(DbResearchSession).filter(DbResearchSession.id == session_id).first()
+            if db_session:
+                db.delete(db_session)
+                db.commit()
+                deleted = True
+            db.close()
+        except Exception:
+            pass
+
+        return deleted
+
