@@ -1,10 +1,17 @@
 """
-LLM Utilities — Shared retry logic, JSON extraction, and model fallback for all agents.
+LLM Utilities — Shared retry logic, JSON extraction, and multi-model fallback chain for all agents.
 """
 import json
 import re
 import asyncio
-from typing import Optional
+from typing import Optional, List
+
+# List of robust fallback models on OpenRouter (tried automatically if primary model fails or 404s)
+FREE_FALLBACK_MODELS = [
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "openrouter/free",
+]
 
 
 async def llm_call_with_retry(
@@ -13,46 +20,47 @@ async def llm_call_with_retry(
     messages: list,
     temperature: float = 0.3,
     max_tokens: int = 2000,
-    max_retries: int = 3,
+    max_retries: int = 2,
     fallback_model: Optional[str] = None,
 ) -> Optional[str]:
-    """Call LLM with exponential backoff retry and optional model fallback."""
-    last_error = None
+    """Call LLM with exponential backoff retry and automatic multi-model failover."""
     
-    for attempt in range(max_retries):
-        try:
-            response = await client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-            content = response.choices[0].message.content
-            if content:
-                return content.strip()
-        except Exception as e:
-            last_error = e
-            wait_time = (2 ** attempt) + 0.5
-            print(f"[LLM] Attempt {attempt + 1}/{max_retries} failed: {e}. Retrying in {wait_time:.1f}s...")
-            await asyncio.sleep(wait_time)
+    # Candidate models to try in sequence
+    candidates = [model]
+    if fallback_model and fallback_model not in candidates:
+        candidates.append(fallback_model)
+    for fb in FREE_FALLBACK_MODELS:
+        if fb not in candidates:
+            candidates.append(fb)
 
-    # Try fallback model if primary exhausted
-    if fallback_model and fallback_model != model:
-        print(f"[LLM] Primary model failed. Trying fallback: {fallback_model}")
-        try:
-            response = await client.chat.completions.create(
-                model=fallback_model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-            content = response.choices[0].message.content
-            if content:
-                return content.strip()
-        except Exception as e:
-            print(f"[LLM] Fallback model also failed: {e}")
+    last_error = None
 
-    print(f"[LLM] All retries exhausted. Last error: {last_error}")
+    for target_model in candidates:
+        for attempt in range(max_retries):
+            try:
+                response = await client.chat.completions.create(
+                    model=target_model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+                content = response.choices[0].message.content
+                if content:
+                    return content.strip()
+            except Exception as e:
+                last_error = e
+                err_str = str(e)
+                print(f"[LLM] Model '{target_model}' attempt {attempt + 1}/{max_retries} failed: {e}")
+                
+                # If 404, 400, or 429 (rate limited / offline model), switch to next candidate model
+                if "404" in err_str or "400" in err_str or "429" in err_str or "unavailable" in err_str.lower() or "rate" in err_str.lower():
+                    print(f"[LLM] Model '{target_model}' rate-limited or offline ({e}). Switching to next candidate model...")
+                    break
+                
+                wait_time = (2 ** attempt) + 0.5
+                await asyncio.sleep(wait_time)
+
+    print(f"[LLM] All candidate models exhausted. Last error: {last_error}")
     return None
 
 
