@@ -7,7 +7,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { 
   ArrowUpRight, BookOpen, GitMerge, FileCheck2, 
-  Terminal, CheckCircle2, AlertCircle, ExternalLink, ChevronDown, ChevronUp, FileText, Compass, Sparkles
+  Terminal, CheckCircle2, AlertCircle, ExternalLink, ChevronDown, ChevronUp, FileText, Compass, Sparkles,
+  Download, Copy, Check
 } from "lucide-react";
 import axios from "axios";
 
@@ -69,6 +70,48 @@ export default function Home() {
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [expandedPaper, setExpandedPaper] = useState<string | null>(null);
   const [activeTopic, setActiveTopic] = useState<string>("");
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyReport = () => {
+    if (sessionData?.report) {
+      navigator.clipboard.writeText(sessionData.report);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDownloadMd = async () => {
+    if (!activeSessionId) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/research/${activeSessionId}/export/markdown`);
+      const blob = new Blob([res.data], { type: "text/markdown" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `report-${activeSessionId}.md`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("Download .md failed", err);
+    }
+  };
+
+  const handleDownloadBibtex = async () => {
+    if (!activeSessionId) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/research/${activeSessionId}/export/bibtex`);
+      const blob = new Blob([res.data], { type: "text/plain" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `citations-${activeSessionId}.bib`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("Download BibTeX failed", err);
+    }
+  };
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -97,6 +140,7 @@ export default function Home() {
 
       const session = response.data;
       const sessionId = session.id;
+      setActiveSessionId(sessionId);
       setLogs((prev) => [...prev, `Session created: ${sessionId}. Opening WebSocket stream...`]);
 
       // 2. Open WebSocket stream
@@ -395,12 +439,44 @@ export default function Home() {
 
               {/* Tab 2: Literature Review string renderer */}
               {activeTab === "report" && (
-                <div className="bg-[var(--panel)] border border-[var(--border)] rounded-xl p-8 max-w-3xl mx-auto shadow-sm">
-                  <article className="prose prose-invert prose-sm max-w-none text-neutral-300 font-light leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {sessionData.report}
-                    </ReactMarkdown>
-                  </article>
+                <div className="space-y-4 max-w-3xl mx-auto">
+                  <div className="flex items-center justify-between bg-[var(--panel)] border border-[var(--border)] px-5 py-3 rounded-xl font-mono text-xs text-neutral-400">
+                    <span className="flex items-center gap-2">
+                      <FileText size={14} className="text-white" />
+                      <span>Report Dossier</span>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleCopyReport}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border)] hover:bg-[var(--panel-hover)] transition-colors text-white"
+                      >
+                        {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                        <span>{copied ? "Copied!" : "Copy Markdown"}</span>
+                      </button>
+                      <button
+                        onClick={handleDownloadMd}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border)] hover:bg-[var(--panel-hover)] transition-colors text-white"
+                      >
+                        <Download size={12} />
+                        <span>.md</span>
+                      </button>
+                      <button
+                        onClick={handleDownloadBibtex}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border)] hover:bg-[var(--panel-hover)] transition-colors text-white"
+                      >
+                        <Download size={12} />
+                        <span>BibTeX</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-[var(--panel)] border border-[var(--border)] rounded-xl p-8 shadow-sm">
+                    <article className="prose prose-invert prose-sm max-w-none text-neutral-300 font-light leading-relaxed">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {sessionData.report}
+                      </ReactMarkdown>
+                    </article>
+                  </div>
                 </div>
               )}
 
