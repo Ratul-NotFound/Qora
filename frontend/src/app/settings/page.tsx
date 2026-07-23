@@ -5,6 +5,8 @@ import Sidebar from '@/components/Sidebar';
 import axios from 'axios';
 import { Loader2, Settings2, Activity, Search, Save, Check } from 'lucide-react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export default function SettingsPage() {
   const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -15,15 +17,15 @@ export default function SettingsPage() {
     sources: {
       arxiv: true,
       semantic_scholar: true,
-      pubmed: false,
-      openalex: true
+      pubmed: true,
+      openalex: true,
+      core: true,
     }
   });
 
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // Load settings from local storage
     const savedSettings = localStorage.getItem('qora_settings');
     if (savedSettings) {
       try {
@@ -33,7 +35,7 @@ export default function SettingsPage() {
 
     const fetchHealth = async () => {
       try {
-        const res = await axios.get('http://localhost:8000/api/health');
+        const res = await axios.get(`${API_URL}/api/health`);
         setHealth(res.data);
       } catch (error) {
         console.error('Failed to fetch health status:', error);
@@ -78,19 +80,28 @@ export default function SettingsPage() {
                   <input 
                     type="text" 
                     readOnly 
-                    value="gpt-4-turbo-preview" 
+                    value={health?.llm?.model || 'Loading...'} 
                     className="w-full bg-white/5 border border-[var(--border)] rounded p-2.5 text-sm font-light text-neutral-300 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 mb-2">Embedding Model</label>
+                  <label className="block text-xs font-mono text-neutral-500 mb-2">Heavy LLM</label>
                   <input 
                     type="text" 
                     readOnly 
-                    value="text-embedding-3-small" 
+                    value={health?.llm?.heavy_model || 'Loading...'} 
                     className="w-full bg-white/5 border border-[var(--border)] rounded p-2.5 text-sm font-light text-neutral-300 focus:outline-none"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-mono text-neutral-500 mb-2">LLM Base URL</label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={health?.llm?.base_url || 'Loading...'} 
+                  className="w-full bg-white/5 border border-[var(--border)] rounded p-2.5 text-sm font-light text-neutral-300 focus:outline-none"
+                />
               </div>
             </div>
           </section>
@@ -106,18 +117,34 @@ export default function SettingsPage() {
                   <Loader2 className="w-4 h-4 animate-spin" /> Checking connections...
                 </div>
               ) : health ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { name: 'API Server', status: health.status === 'ok' },
-                    { name: 'PostgreSQL', status: health.database === 'connected' },
-                    { name: 'Weaviate', status: health.vector_db === 'connected' || true },
-                    { name: 'Redis', status: health.cache === 'connected' || true }
-                  ].map((service, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 border border-[var(--border)] rounded bg-white/5">
-                      <span className="text-sm font-light">{service.name}</span>
-                      <StatusDot active={service.status} />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex items-center justify-between p-3 border border-[var(--border)] rounded bg-white/5">
+                      <span className="text-sm font-light">API Server</span>
+                      <StatusDot active={health.status === 'online'} />
                     </div>
-                  ))}
+                    <div className="flex items-center justify-between p-3 border border-[var(--border)] rounded bg-white/5">
+                      <span className="text-sm font-light">PostgreSQL</span>
+                      <StatusDot active={health.database === 'connected'} />
+                    </div>
+                    <div className="flex items-center justify-between p-3 border border-[var(--border)] rounded bg-white/5">
+                      <span className="text-sm font-light">LLM API Key</span>
+                      <StatusDot active={health.llm?.key_configured === true} />
+                    </div>
+                  </div>
+
+                  {/* Source API Keys */}
+                  <div className="pt-4 border-t border-[var(--border)]">
+                    <div className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest mb-3">Source API Keys</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                      {health.sources && Object.entries(health.sources).map(([key, val]) => (
+                        <div key={key} className="flex items-center justify-between p-2 border border-[var(--border)] rounded bg-white/5">
+                          <span className="text-xs font-light capitalize">{key.replace('_', ' ')}</span>
+                          <StatusDot active={val as boolean} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="text-sm text-red-400 font-light flex items-center gap-2">
@@ -202,7 +229,7 @@ export default function SettingsPage() {
           </section>
 
           <footer className="text-center pb-8 pt-4 border-t border-[var(--border)] mt-12">
-             <div className="text-[10px] font-mono text-neutral-500">QORA RESEARCH AI V1.0.0</div>
+             <div className="text-[10px] font-mono text-neutral-500">QORA RESEARCH AI v2.0.0</div>
           </footer>
         </div>
       </main>

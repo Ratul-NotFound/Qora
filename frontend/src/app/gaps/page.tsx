@@ -6,6 +6,8 @@ import axios from 'axios';
 import { Loader2, AlertTriangle, Lightbulb } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export default function GapsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -13,11 +15,11 @@ export default function GapsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const sessionsRes = await axios.get('http://localhost:8000/api/sessions');
+        const sessionsRes = await axios.get(`${API_URL}/api/sessions`);
         const sessions = sessionsRes.data;
         if (sessions.length > 0) {
           const recentSession = sessions[0];
-          const resultsRes = await axios.get(`http://localhost:8000/api/research/${recentSession.id}/results`);
+          const resultsRes = await axios.get(`${API_URL}/api/research/${recentSession.id}/results`);
           setData(resultsRes.data.intelligence);
         }
       } catch (error) {

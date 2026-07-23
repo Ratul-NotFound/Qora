@@ -7,6 +7,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Loader2, FileText, Download, Copy, Check } from 'lucide-react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export default function ReportsPage() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ export default function ReportsPage() {
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const res = await axios.get('http://localhost:8000/api/sessions');
+        const res = await axios.get(`${API_URL}/api/sessions`);
         setSessions(res.data);
       } catch (error) {
         console.error('Failed to fetch sessions:', error);
@@ -33,7 +35,7 @@ export default function ReportsPage() {
     setSelectedSessionId(id);
     setReportLoading(true);
     try {
-      const res = await axios.get(`http://localhost:8000/api/research/${id}/results`);
+      const res = await axios.get(`${API_URL}/api/research/${id}/results`);
       setReportData(res.data);
     } catch (error) {
       console.error('Failed to load report:', error);
@@ -53,7 +55,7 @@ export default function ReportsPage() {
   const handleDownloadMd = async () => {
     if (!selectedSessionId) return;
     try {
-      const res = await axios.get(`http://localhost:8000/api/research/${selectedSessionId}/export/markdown`);
+      const res = await axios.get(`${API_URL}/api/research/${selectedSessionId}/export/markdown`);
       const blob = new Blob([res.data], { type: 'text/markdown' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -69,7 +71,7 @@ export default function ReportsPage() {
   const handleDownloadBibtex = async () => {
     if (!selectedSessionId) return;
     try {
-      const res = await axios.get(`http://localhost:8000/api/research/${selectedSessionId}/export/bibtex`);
+      const res = await axios.get(`${API_URL}/api/research/${selectedSessionId}/export/bibtex`);
       const blob = new Blob([res.data], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

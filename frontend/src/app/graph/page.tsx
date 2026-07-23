@@ -6,6 +6,8 @@ import axios from 'axios';
 import { Loader2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), {
   ssr: false,
 });
@@ -18,11 +20,11 @@ export default function GraphPage() {
   useEffect(() => {
     const fetchGraphData = async () => {
       try {
-        const sessionsRes = await axios.get('http://localhost:8000/api/sessions');
+        const sessionsRes = await axios.get(`${API_URL}/api/sessions`);
         const sessions = sessionsRes.data;
         if (sessions.length > 0) {
           const recentSession = sessions[0];
-          const resultsRes = await axios.get(`http://localhost:8000/api/research/${recentSession.id}/results`);
+          const resultsRes = await axios.get(`${API_URL}/api/research/${recentSession.id}/results`);
           const data = resultsRes.data.intelligence?.graph_data;
           setGraphData(data);
         }
