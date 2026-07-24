@@ -39,18 +39,28 @@ class WriterAgent:
 
         paper_context = ""
         for i, p in enumerate(top_papers):
-            paper_context += f"[{i+1}] {p.title} ({p.year})\n"
-            paper_context += f"    Authors: {', '.join(p.authors[:3])}\n"
-            paper_context += f"    Key Findings: {'; '.join(p.key_findings)}\n"
-            paper_context += f"    Methods: {', '.join(p.methods)}\n\n"
+            authors_str = ", ".join(str(a) for a in (p.authors or [])[:3])
+            findings_str = "; ".join(str(f) for f in (p.key_findings or []))
+            methods_str = ", ".join(str(m) for m in (p.methods or []))
+            
+            paper_context += f"[{i+1}] {p.title or 'Untitled'} ({p.year or 'n.d.'})\n"
+            if authors_str:
+                paper_context += f"    Authors: {authors_str}\n"
+            if findings_str:
+                paper_context += f"    Key Findings: {findings_str}\n"
+            if methods_str:
+                paper_context += f"    Methods: {methods_str}\n"
+            paper_context += "\n"
 
-        gaps = intelligence_data.get("gaps", [])
-        
-        gaps_context = "\n".join(
-            f"- {g['gap']}: {g.get('description', '')}" 
-            for g in gaps[:5] 
-            if isinstance(g, dict)
-        )
+        gaps = intelligence_data.get("gaps", []) or []
+        gaps_context = ""
+        for g in gaps[:5]:
+            if isinstance(g, dict):
+                gap_title = g.get("gap") or g.get("title") or str(g)
+                gap_desc = g.get("description", "")
+                gaps_context += f"- {gap_title}: {gap_desc}\n"
+            elif isinstance(g, str):
+                gaps_context += f"- {g}\n"
         
         prompt = f"""You are an expert academic researcher writing a comprehensive literature review on: "{topic}".
 
