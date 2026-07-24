@@ -164,4 +164,9 @@ Return ONLY the JSON array of {len(batch)} float numbers."""
             except Exception:
                 relevant.extend(batch)
 
+        if not relevant:
+            for p in papers:
+                p.relevance_score = 0.5
+            return papers
+
         return relevant

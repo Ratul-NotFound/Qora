@@ -20,7 +20,9 @@ class SemanticScholarSource:
     name = "semantic_scholar"
 
     def __init__(self, api_key: str = ""):
-        self.headers = {}
+        self.headers = {
+            "User-Agent": "QORA-Research-AI/2.0 (contact@qora.ai)"
+        }
         if api_key:
             self.headers["x-api-key"] = api_key
 

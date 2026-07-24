@@ -10,7 +10,7 @@ from typing import List, Optional
 from models.schemas import Paper
 
 
-ARXIV_API_URL = "http://export.arxiv.org/api/query"
+ARXIV_API_URL = "https://export.arxiv.org/api/query"
 
 
 class ArxivSource:
@@ -36,7 +36,7 @@ class ArxivSource:
             y_to = year_to or datetime.now().year
             params["search_query"] += f" AND submittedDate:[{y_from}0101 TO {y_to}1231]"
 
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
             resp = await client.get(ARXIV_API_URL, params=params)
             resp.raise_for_status()
 
@@ -100,7 +100,7 @@ class ArxivSource:
 
     async def get_by_id(self, arxiv_id: str) -> Optional[Paper]:
         params = {"id_list": arxiv_id, "max_results": 1}
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
             resp = await client.get(ARXIV_API_URL, params=params)
             resp.raise_for_status()
         data = xmltodict.parse(resp.text)
