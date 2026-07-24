@@ -122,10 +122,10 @@ Write the full literature review in Markdown format below:"""
             )
             
             if on_progress:
-                await on_progress("Literature review generated successfully!", 1.0)
+                await on_progress("Literature review generated successfully!", 0.98)
                 
             return full_dossier
         else:
             if on_progress:
-                await on_progress("Literature review generation failed after retries.", 1.0)
+                await on_progress("Literature review generation failed after retries.", 0.98)
             return f"# Literature Review: {topic}\n\nError: All LLM generation attempts failed. Please check your API key and model configuration."
