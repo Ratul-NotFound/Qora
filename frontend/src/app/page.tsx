@@ -162,7 +162,22 @@ export default function Home() {
       ws.onclose = async () => {
         setLogs((prev) => [...prev, "Syncing final data..."]);
         
-        // 3. Fetch completed data
+        // Poll status until completion if closed early
+        let isDone = false;
+        let attempts = 0;
+        while (!isDone && attempts < 40) {
+          try {
+            const statusRes = await axios.get(`${API_URL}/api/research/${sessionId}`);
+            if (statusRes.data.status === "completed" || statusRes.data.status === "failed") {
+              isDone = true;
+              break;
+            }
+          } catch (e) {}
+          attempts++;
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+
+        // Fetch completed data
         try {
           const resultsResponse = await axios.get(`${API_URL}/api/research/${sessionId}/results`);
           setSessionData(resultsResponse.data);

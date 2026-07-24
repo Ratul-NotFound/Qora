@@ -10,7 +10,7 @@ API_URL = "http://localhost:8000"
 WS_URL = "ws://localhost:8000"
 
 async def run_pipeline():
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=60) as client:
         for _ in range(10):
             try:
                 res = await client.get(f"{API_URL}/api/health")
@@ -47,11 +47,23 @@ async def run_pipeline():
                         if data.get("progress", 0) >= 1.0:
                             break
         except Exception as e:
-            print(f"WebSocket closed: {e}")
+            print(f"WebSocket monitoring finished: {e}")
 
-        await asyncio.sleep(2)
+        # Poll status until backend flags completion
+        print("\nPolling session status until pipeline fully completes...")
+        for attempt in range(40):
+            try:
+                s_res = await client.get(f"{API_URL}/api/research/{session_id}")
+                s_data = s_res.json()
+                status = s_data.get("status")
+                if status in ["completed", "failed"]:
+                    print(f"Pipeline status reached: {status}!")
+                    break
+            except Exception:
+                pass
+            await asyncio.sleep(2)
 
-        print("\nFetching final synthesis results...")
+        print("Fetching final synthesis results...")
         res = await client.get(f"{API_URL}/api/research/{session_id}/results")
         results = res.json()
 
@@ -59,13 +71,17 @@ async def run_pipeline():
         report = results.get("report", "")
         intelligence = results.get("intelligence", {})
 
-        print(f"\nRESEARCH COMPLETE SUCCESSFULLY!")
+        print(f"\n==========================================")
+        print(f"RESEARCH PIPELINE COMPLETE!")
         print(f"Total Papers Analyzed: {len(papers)}")
         print(f"Gaps Detected: {len(intelligence.get('gaps', []))}")
         print(f"Hypotheses Generated: {len(intelligence.get('hypotheses', []))}")
-        print("\n--- REPORT PREVIEW ---")
-        print(report[:1200] if report else "No report generated.")
-        print("\n----------------------")
+        print(f"Report Length: {len(report)} characters")
+        print("==========================================\n")
+
+        print("--- LITERATURE REVIEW PREVIEW ---")
+        print(report[:1500] if report else "No report generated.")
+        print("\n----------------------------------")
 
 if __name__ == "__main__":
     asyncio.run(run_pipeline())
